@@ -1,0 +1,745 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulasi 3D Ekuilibrium Pasar & Matematika Bisnis</title>
+  <!-- Library A-Frame untuk WebXR / 3D -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <!-- Library Chart.js untuk Grafik Matematika Bisnis 2D Presisi -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    /* Panel Kiri: Kontrol & Asisten AI */
+    #ui-container {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 999;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(6px);
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+      width: 330px;
+      max-height: calc(100vh - 24px);
+      overflow-y: auto;
+    }
+
+    /* Panel Kanan: Grafik Matematika Bisnis & Perhitungan */
+    #chart-container {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 999;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(6px);
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+      width: 370px;
+      max-height: calc(100vh - 24px);
+      overflow-y: auto;
+    }
+
+    h2, h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.05rem;
+      color: #1e293b;
+      border-bottom: 2px solid #006e59;
+      padding-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .control-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #334155;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+
+    input[type=range] {
+      width: 100%;
+      accent-color: #006e59;
+      cursor: pointer;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    button {
+      flex: 1;
+      padding: 8px 10px;
+      border: none;
+      border-radius: 6px;
+      background: #006e59;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: #005242;
+      transform: translateY(-1px);
+    }
+
+    button.active-subsidy {
+      background: #d97706;
+    }
+
+    /* Asisten AI Sokratik "Mbak Siti" */
+    #ai-assistant {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: #ecfdf5;
+      border-left: 4px solid #006e59;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      color: #064e3b;
+    }
+
+    #ai-assistant header {
+      font-weight: bold;
+      margin-bottom: 4px;
+      color: #006e59;
+    }
+
+    #status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.76rem;
+      font-weight: bold;
+      margin-top: 4px;
+      color: white;
+      background: #006e59;
+    }
+
+    /* Tabel Ringkasan Matematika Bisnis */
+    .math-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 0.78rem;
+    }
+
+    .math-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 7px 9px;
+      border-radius: 6px;
+    }
+
+    .math-card span {
+      display: block;
+      color: #64748b;
+      font-size: 0.7rem;
+    }
+
+    .math-card strong {
+      color: #0f172a;
+      font-size: 0.92rem;
+    }
+
+    .formula-box {
+      background: #f1f5f9;
+      padding: 8px;
+      border-radius: 6px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.76rem;
+      color: #334155;
+      margin-top: 8px;
+      line-height: 1.45;
+    }
+
+    .camera-presets {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px dashed #cbd5e1;
+    }
+
+    .camera-presets p {
+      margin: 0 0 5px 0;
+      font-size: 0.75rem;
+      color: #64748b;
+      font-weight: bold;
+    }
+
+    .btn-cam {
+      background: #334155;
+      font-size: 0.72rem;
+      padding: 5px 6px;
+    }
+
+    .btn-cam:hover {
+      background: #1e293b;
+    }
+
+    @media (max-width: 900px) {
+      #ui-container, #chart-container {
+        width: 280px;
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PANEL KIRI: KONTROL & ASISTEN AI -->
+  <div id="ui-container">
+    <h2>🌾 Pasar Kemuning Siantan Jaya 3D</h2>
+    
+    <div class="control-group">
+      <label for="priceSlider">
+        <span>Harga Beras (P):</span>
+        <span style="color:#006e59; font-size:0.95rem;">Rp <span id="priceValue">10</span>.000 / kg</span>
+      </label>
+      <input type="range" id="priceSlider" min="2" max="18" value="10" step="1">
+    </div>
+
+    <div class="btn-group">
+      <button id="btn-subsidy" onclick="toggleSubsidy()">+ Subsidi (s = 4)</button>
+      <button onclick="resetSimulation()" style="background: #64748b;">Reset</button>
+    </div>
+
+    <div style="margin-top: 8px;">
+      <span id="status-badge">Ekuilibrium Pasar</span>
+    </div>
+
+    <div id="ai-assistant">
+      <header>🤖 Mbak Siti (AI Analis):</header>
+      <span id="ai-text">Selamat datang di lapak beras! Geser harga beras (P) atau aktifkan subsidi untuk mengamati perubahan kurva 3D, stok karung beras, dan grafik analisis di kanan.</span>
+    </div>
+
+    <div class="camera-presets">
+      <p>🎥 Sudut Pandang Kamera 3D (WASD + Drag Mouse):</p>
+      <div class="btn-group">
+        <button class="btn-cam" onclick="setCameraView('overview')">Semua Area</button>
+        <button class="btn-cam" onclick="setCameraView('market')">Lapak Beras</button>
+        <button class="btn-cam" onclick="setCameraView('graph')">Grafik 3D</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL KANAN: GRAFIK MATEMATIKA BISNIS 2D -->
+  <div id="chart-container">
+    <h3>📊 Analisis Matematika Bisnis</h3>
+    <div style="height: 215px; width: 100%;">
+      <canvas id="equilibriumChart"></canvas>
+    </div>
+
+    <div class="formula-box" id="formula-display">
+      • Permintaan: <strong>Qd = 20 - P</strong><br>
+      • Penawaran : <strong>Qs = P</strong><br>
+      • Ekuilibrium: <strong>Pe = 10 | Qe = 10</strong>
+    </div>
+
+    <div class="math-grid">
+      <div class="math-card">
+        <span>Permintaan (Qd)</span>
+        <strong id="val-qd" style="color:#e11d48;">10 unit</strong>
+      </div>
+      <div class="math-card">
+        <span>Penawaran (Qs)</span>
+        <strong id="val-qs" style="color:#0284c7;">10 unit</strong>
+      </div>
+      <div class="math-card">
+        <span>Transaksi Aktual (Q)</span>
+        <strong id="val-q-actual">10 unit</strong>
+      </div>
+      <div class="math-card">
+        <span>Total Nilai Transaksi</span>
+        <strong id="val-revenue">Rp 100.000</strong>
+      </div>
+      <div class="math-card" style="grid-column: span 2;" id="subsidy-cost-card">
+        <span>Beban Subsidi Pemerintah (s × Q_transaksi)</span>
+        <strong id="val-subsidy-cost" style="color:#d97706;">Rp 0 (Tidak ada subsidi)</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- A-FRAME 3D / VR / AR SCENE -->
+  <a-scene shadow="type: pcfsoft" vr-mode-ui="enabled: true">
+    
+    <!-- Langit & Pencahayaan Realistis -->
+    <a-sky color="#bae6fd"></a-sky>
+    <a-fog type="linear" color="#e0f2fe" near="15" far="45"></a-fog>
+    
+    <a-light type="ambient" color="#ffffff" intensity="0.65"></a-light>
+    <a-light type="directional" position="-4 8 6" intensity="0.9" castShadow="true"></a-light>
+
+    <!-- Tanah & Jalan Setapak Pasar -->
+    <a-plane position="0 0 0" rotation="-90 0 0" width="50" height="50" color="#65a30d" shadow="receive: true"></a-plane>
+    <a-plane position="0 0.01 -3.5" rotation="-90 0 0" width="14" height="6" color="#d6d3d1" shadow="receive: true"></a-plane>
+
+    <!-- Dekorasi Pohon di Latar Belakang -->
+    <a-entity position="-7 0 -8">
+      <a-cylinder position="0 1.2 0" radius="0.25" height="2.4" color="#78350f"></a-cylinder>
+      <a-dodecahedron position="0 3 0" radius="1.6" color="#15803d"></a-dodecahedron>
+    </a-entity>
+    <a-entity position="7.5 0 -7">
+      <a-cylinder position="0 1.5 0" radius="0.3" height="3" color="#78350f"></a-cylinder>
+      <a-dodecahedron position="0 3.5 0" radius="1.9" color="#166534"></a-dodecahedron>
+    </a-entity>
+
+    <!-- ========================================== -->
+    <!-- 1. VISUALISASI 3D PASAR & LUMBUNG DINAMIS  -->
+    <!-- ========================================== -->
+    <a-entity id="pasar-lokal" position="-2.8 0 -4.2">
+      <!-- Lantai Kayu Lapak -->
+      <a-box position="0 0.05 0" width="3.4" height="0.1" depth="2.8" color="#92400e" shadow="receive: true"></a-box>
+      
+      <!-- Atap Limas Tradisional -->
+      <a-cone position="0 2.7 0" radius-bottom="2.5" height="1.3" color="#7c2d12" segments-radial="4" rotation="0 45 0" shadow="cast: true"></a-cone>
+      
+      <!-- 4 Tiang Kayu -->
+      <a-cylinder position="-1.4 1.2 -1.1" radius="0.09" height="2.4" color="#451a03" shadow="cast: true"></a-cylinder>
+      <a-cylinder position="1.4 1.2 -1.1" radius="0.09" height="2.4" color="#451a03" shadow="cast: true"></a-cylinder>
+      <a-cylinder position="-1.4 1.2 1.1" radius="0.09" height="2.4" color="#451a03" shadow="cast: true"></a-cylinder>
+      <a-cylinder position="1.4 1.2 1.1" radius="0.09" height="2.4" color="#451a03" shadow="cast: true"></a-cylinder>
+
+      <!-- Papan Nama Lapak -->
+      <a-box position="0 2.15 1.15" width="2.2" height="0.35" depth="0.08" color="#006e59"></a-box>
+      <a-text value="LAPAK BERAS RASAU JAYA" position="0 2.15 1.2" align="center" color="#ffffff" width="3.8"></a-text>
+
+      <!-- Meja Dagang -->
+      <a-box position="0 0.5 0" width="2.5" height="0.8" depth="1.3" color="#d97706" shadow="cast: true"></a-box>
+
+      <!-- Sosok Pedagang di Belakang Meja -->
+      <a-entity position="0 0.1 -0.85">
+        <a-cylinder position="0 0.75 0" radius="0.22" height="0.9" color="#0284c7"></a-cylinder>
+        <a-sphere position="0 1.4 0" radius="0.2" color="#fed7aa"></a-sphere>
+        <!-- Caping / Topi Petani -->
+        <a-cone position="0 1.58 0" radius-bottom="0.38" height="0.18" color="#eab308"></a-cone>
+      </a-entity>
+
+      <!-- Container Karung Beras Dinamis (Mewakili Qs / Penawaran) -->
+      <a-entity id="rice-sacks-container" position="-0.95 0.98 -0.25"></a-entity>
+
+      <!-- Container Pembeli Dinamis (Mewakili Qd / Permintaan) -->
+      <a-entity id="buyers-container" position="-1.1 0.1 1.35"></a-entity>
+
+      <!-- Papan Status 3D di Atas Lapak -->
+      <a-text id="market-3d-label" value="Stok: 10 | Pembeli: 10" position="0 3.55 0" align="center" color="#0f172a" width="4.5"></a-text>
+    </a-entity>
+
+    <!-- ========================================== -->
+    <!-- 2. VISUALISASI KURVA EKUILIBRIUM 3D PRESISI -->
+    <!-- ========================================== -->
+    <a-entity id="grafik-3d" position="1.4 0.7 -3.8" rotation="0 -18 0">
+      <!-- Papan Latar Transparan Grafik 3D -->
+      <a-box position="1.35 1.35 -0.08" width="3.1" height="3.1" depth="0.04" color="#ffffff" opacity="0.85"></a-box>
+
+      <!-- Grid Latar Belakang 3D -->
+      <a-entity id="grid-3d"></a-entity>
+
+      <!-- Sumbu Y (Harga / P: 0 - 20 -> tinggi 0 - 2.4 unit) -->
+      <a-cylinder position="0 1.2 0" radius="0.025" height="2.5" color="#1e293b"></a-cylinder>
+      <a-cone position="0 2.48 0" radius-bottom="0.06" height="0.14" color="#1e293b"></a-cone>
+      <a-text value="Harga (P)" position="-0.2 2.65 0" align="center" width="3.2" color="#0f172a"></a-text>
+
+      <!-- Sumbu X (Kuantitas / Q: 0 - 24 -> panjang 0 - 2.4 unit) -->
+      <a-cylinder position="1.25 0 0" rotation="0 0 -90" radius="0.025" height="2.6" color="#1e293b"></a-cylinder>
+      <a-cone position="2.58 0 0" rotation="0 0 -90" radius-bottom="0.06" height="0.14" color="#1e293b"></a-cone>
+      <a-text value="Kuantitas (Q)" position="2.65 -0.22 0" align="center" width="3.2" color="#0f172a"></a-text>
+
+      <!-- Kurva Permintaan Qd = 20 - P (Dari Q=0,P=20 ke Q=20,P=0) -->
+      <!-- Skala: 1 unit Q = 0.1m, 1 unit P = 0.1m. Panjang diagonal = sqrt(2^2 + 2^2) = 2.828 -->
+      <a-cylinder id="kurva-permintaan" position="1.0 1.0 0.02" rotation="0 0 45" radius="0.028" height="2.828" color="#e11d48"></a-cylinder>
+      <a-text value="Qd = 20 - P" position="1.95 0.35 0.03" width="2.8" color="#e11d48"></a-text>
+
+      <!-- Kurva Penawaran Awal Qs = P (Dari Q=0,P=0 ke Q=20,P=20) -->
+      <a-cylinder id="kurva-penawaran-awal" position="1.0 1.0 0.01" rotation="0 0 -45" radius="0.022" height="2.828" color="#94a3b8" opacity="0.35"></a-cylinder>
+
+      <!-- Kurva Penawaran Aktif Qs (Bergeser saat subsidi) -->
+      <a-cylinder id="kurva-penawaran" position="1.0 1.0 0.02" rotation="0 0 -45" radius="0.028" height="2.828" color="#0284c7"></a-cylinder>
+      <a-text id="label-penawaran" value="Qs = P" position="1.95 2.05 0.03" width="2.8" color="#0284c7"></a-text>
+
+      <!-- Garis Bantu Horizontal (Level Harga P saat ini) -->
+      <a-box id="price-guide-line" position="1.0 1.0 0.015" width="2.0" height="0.012" depth="0.012" color="#f59e0b"></a-box>
+
+      <!-- Batang Selisih Surplus / Shortage antara Qd dan Qs -->
+      <a-box id="gap-bar" position="1.0 1.0 0.025" width="0.01" height="0.03" depth="0.03" color="#eab308" visible="false"></a-box>
+
+      <!-- Titik Indikator pada Kurva Permintaan (Qd) -->
+      <a-sphere id="titik-qd" position="1.0 1.0 0.05" radius="0.065" color="#e11d48"></a-sphere>
+
+      <!-- Titik Indikator pada Kurva Penawaran (Qs) -->
+      <a-sphere id="titik-qs" position="1.0 1.0 0.05" radius="0.065" color="#0284c7"></a-sphere>
+
+      <!-- Titik Ekuilibrium Aktif (Bersinar Emas saat P = Pe) -->
+      <a-sphere id="titik-ekuilibrium" position="1.0 1.0 0.06" radius="0.085" color="#facc15"
+                animation="property: scale; to: 1.25 1.25 1.25; dir: alternate; dur: 800; loop: true"></a-sphere>
+      
+      <a-text id="label-3d-eq" value="E(10, 10)" position="1.0 1.2 0.06" align="center" width="3" color="#0f172a"></a-text>
+    </a-entity>
+
+    <!-- Kamera & Kontrol Navigasi -->
+    <a-entity id="camera-rig" position="0 1.6 0.8">
+      <a-entity id="main-camera" camera look-controls wasd-controls>
+        <a-cursor color="#006e59" fuse="false" scale="0.8 0.8 0.8"></a-cursor>
+      </a-entity>
+    </a-entity>
+
+  </a-scene>
+
+  <!-- LOGIKA MATEMATIKA BISNIS, CHART 2D & SINKRONISASI 3D -->
+  <script>
+    let hasSubsidy = false;
+    const subsidyAmount = 4; // s = 4
+
+    // Referensi DOM
+    const priceSlider = document.getElementById('priceSlider');
+    const priceValue = document.getElementById('priceValue');
+    const btnSubsidy = document.getElementById('btn-subsidy');
+    const statusBadge = document.getElementById('status-badge');
+    const aiText = document.getElementById('ai-text');
+
+    // Referensi 3D
+    const titikQd = document.getElementById('titik-qd');
+    const titikQs = document.getElementById('titik-qs');
+    const titikEq = document.getElementById('titik-ekuilibrium');
+    const priceGuideLine = document.getElementById('price-guide-line');
+    const gapBar = document.getElementById('gap-bar');
+    const kurvaPenawaran = document.getElementById('kurva-penawaran');
+    const labelPenawaran = document.getElementById('label-penawaran');
+    const label3dEq = document.getElementById('label-3d-eq');
+    const riceSacksContainer = document.getElementById('rice-sacks-container');
+    const buyersContainer = document.getElementById('buyers-container');
+    const market3dLabel = document.getElementById('market-3d-label');
+
+    // Inisialisasi Grid 3D pada Papan Grafik
+    function build3DGrid() {
+      const gridContainer = document.getElementById('grid-3d');
+      for (let i = 2; i <= 20; i += 2) {
+        const pos = i * 0.1; // Skala 1 unit matematika = 0.1 meter 3D
+        // Garis Vertikal
+        const vLine = document.createElement('a-box');
+        vLine.setAttribute('position', `${pos} 1.1 0`);
+        vLine.setAttribute('width', '0.005');
+        vLine.setAttribute('height', '2.2');
+        vLine.setAttribute('depth', '0.005');
+        vLine.setAttribute('color', '#cbd5e1');
+        gridContainer.appendChild(vLine);
+
+        // Garis Horizontal
+        const hLine = document.createElement('a-box');
+        hLine.setAttribute('position', `1.1 ${pos} 0`);
+        hLine.setAttribute('width', '2.2');
+        hLine.setAttribute('height', '0.005');
+        hLine.setAttribute('depth', '0.005');
+        hLine.setAttribute('color', '#cbd5e1');
+        gridContainer.appendChild(hLine);
+      }
+    }
+
+    // Inisialisasi Grafik 2D (Chart.js)
+    const ctx = document.getElementById('equilibriumChart').getContext('2d');
+    const equilibriumChart = new Chart(ctx, {
+      type: 'scatter',
+      data: {
+        datasets: [
+          {
+            label: 'Permintaan (Qd)',
+            data: [{x: 0, y: 20}, {x: 20, y: 0}],
+            borderColor: '#e11d48',
+            backgroundColor: '#e11d48',
+            showLine: true,
+            borderWidth: 2.5,
+            pointRadius: 0
+          },
+          {
+            label: 'Penawaran Awal (Qs)',
+            data: [{x: 0, y: 0}, {x: 20, y: 20}],
+            borderColor: '#94a3b8',
+            borderDash: [5, 5],
+            showLine: true,
+            borderWidth: 1.5,
+            pointRadius: 0
+          },
+          {
+            label: 'Penawaran Aktif (Qs)',
+            data: [{x: 0, y: 0}, {x: 20, y: 20}],
+            borderColor: '#0284c7',
+            backgroundColor: '#0284c7',
+            showLine: true,
+            borderWidth: 2.5,
+            pointRadius: 0
+          },
+          {
+            label: 'Titik Qd Saat Ini',
+            data: [{x: 10, y: 10}],
+            backgroundColor: '#e11d48',
+            borderColor: '#ffffff',
+            borderWidth: 2,
+            pointRadius: 6
+          },
+          {
+            label: 'Titik Qs Saat Ini',
+            data: [{x: 10, y: 10}],
+            backgroundColor: '#0284c7',
+            borderColor: '#ffffff',
+            borderWidth: 2,
+            pointRadius: 6
+          },
+          {
+            label: 'Garis Harga (P)',
+            data: [{x: 0, y: 10}, {x: 22, y: 10}],
+            borderColor: '#f59e0b',
+            borderDash: [3, 3],
+            showLine: true,
+            borderWidth: 1.5,
+            pointRadius: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 150 },
+        scales: {
+          x: {
+            type: 'linear',
+            min: 0,
+            max: 24,
+            title: { display: true, text: 'Kuantitas Beras (Q)', font: { size: 11, weight: 'bold' } },
+            ticks: { stepSize: 4, font: { size: 10 } }
+          },
+          y: {
+            min: 0,
+            max: 22,
+            title: { display: true, text: 'Harga P (Ribu Rp)', font: { size: 11, weight: 'bold' } },
+            ticks: { stepSize: 4, font: { size: 10 } }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              boxWidth: 10,
+              font: { size: 10 },
+              filter: (item) => !item.text.includes('Garis Harga')
+            }
+          }
+        }
+      }
+    });
+
+    // Render Objek 3D Dinamis di Pasar (Karung Beras & Pembeli)
+    function updateMarket3DObjects(Qd, Qs) {
+      // 1. Update Karung Beras di Meja (Maksimal visual 22 karung bertumpuk)
+      riceSacksContainer.innerHTML = '';
+      const sackCount = Math.min(Math.max(0, Math.round(Qs)), 22);
+      for (let i = 0; i < sackCount; i++) {
+        const col = i % 6;
+        const row = Math.floor(i / 6) % 2;
+        const layer = Math.floor(i / 12);
+
+        const sack = document.createElement('a-sphere');
+        sack.setAttribute('position', `${col * 0.36} ${layer * 0.22} ${row * 0.45}`);
+        sack.setAttribute('scale', '0.17 0.12 0.21');
+        sack.setAttribute('color', hasSubsidy ? '#fef08a' : '#f5f5dc');
+        sack.setAttribute('shadow', 'cast: true');
+        riceSacksContainer.appendChild(sack);
+      }
+
+      // 2. Update Kerumunan Pembeli di Depan Lapak (Maksimal visual 18 pembeli)
+      buyersContainer.innerHTML = '';
+      const buyerCount = Math.min(Math.max(0, Math.round(Qd)), 18);
+      for (let j = 0; j < buyerCount; j++) {
+        const col = j % 6;
+        const row = Math.floor(j / 6);
+
+        const person = document.createElement('a-entity');
+        person.setAttribute('position', `${col * 0.42} 0 ${row * 0.48}`);
+
+        const body = document.createElement('a-cylinder');
+        body.setAttribute('position', '0 0.55 0');
+        body.setAttribute('radius', '0.15');
+        body.setAttribute('height', '0.75');
+        body.setAttribute('color', j % 2 === 0 ? '#e11d48' : '#059669');
+        body.setAttribute('shadow', 'cast: true');
+
+        const head = document.createElement('a-sphere');
+        head.setAttribute('position', '0 1.08 0');
+        head.setAttribute('radius', '0.14');
+        head.setAttribute('color', '#fed7aa');
+
+        person.appendChild(body);
+        person.appendChild(head);
+        buyersContainer.appendChild(person);
+      }
+
+      market3dLabel.setAttribute('value', `Stok (Qs): ${Qs} Karung | Pembeli (Qd): ${Qd} Orang`);
+    }
+
+    // Fungsi Utama Pembaruan Simulasi
+    function updateSimulation() {
+      const P = parseFloat(priceSlider.value);
+      priceValue.innerText = P;
+
+      // Rumus Matematika Bisnis:
+      // Qd = 20 - P
+      // Qs = P (tanpa subsidi) atau Qs' = P + 4 (dengan subsidi s = 4)
+      const Qd = Math.max(0, 20 - P);
+      const Qs = hasSubsidy ? (P + subsidyAmount) : P;
+      const eqPrice = hasSubsidy ? 8 : 10;
+      const eqQty = hasSubsidy ? 12 : 10;
+      const actualTransactionQ = Math.min(Qd, Qs);
+
+      // Skala Koordinat 3D: 1 unit matematika = 0.1 meter
+      const y3d = P * 0.1;
+      const xQd3d = Qd * 0.1;
+      const xQs3d = Qs * 0.1;
+
+      // Update Posisi Titik Qd & Qs di Grafik 3D
+      titikQd.setAttribute('position', `${xQd3d} ${y3d} 0.05`);
+      titikQs.setAttribute('position', `${xQs3d} ${y3d} 0.05`);
+
+      // Update Garis Bantu Harga Horizontal di 3D
+      const maxLineX = Math.max(xQd3d, xQs3d, 0.2);
+      priceGuideLine.setAttribute('position', `${maxLineX / 2} ${y3d} 0.015`);
+      priceGuideLine.setAttribute('width', `${maxLineX}`);
+
+      // Update Visualisasi Selisih (Surplus / Shortage) di 3D
+      if (Qd !== Qs) {
+        const diff = Math.abs(xQs3d - xQd3d);
+        const midX = (xQs3d + xQd3d) / 2;
+        gapBar.setAttribute('visible', 'true');
+        gapBar.setAttribute('position', `${midX} ${y3d} 0.03`);
+        gapBar.setAttribute('width', `${diff}`);
+        gapBar.setAttribute('color', Qs > Qd ? '#ea580c' : '#dc2626');
+      } else {
+        gapBar.setAttribute('visible', 'false');
+      }
+
+      // Update Posisi Titik Ekuilibrium & Kurva Penawaran 3D
+      if (hasSubsidy) {
+        // Qs' = P + 4 -> titik tengah segmen dari (Q=4,P=0) ke (Q=24,P=20) berada di (14, 10) -> (1.4, 1.0)
+        kurvaPenawaran.setAttribute('position', '1.4 1.0 0.02');
+        labelPenawaran.setAttribute('position', '2.15 1.85 0.03');
+        labelPenawaran.setAttribute('value', "Qs' = P + 4");
+        titikEq.setAttribute('position', '1.2 0.8 0.06');
+        label3dEq.setAttribute('position', '1.2 1.02 0.06');
+        label3dEq.setAttribute('value', 'E2(Q=12, P=8)');
+      } else {
+        kurvaPenawaran.setAttribute('position', '1.0 1.0 0.02');
+        labelPenawaran.setAttribute('position', '1.95 2.05 0.03');
+        labelPenawaran.setAttribute('value', 'Qs = P');
+        titikEq.setAttribute('position', '1.0 1.0 0.06');
+        label3dEq.setAttribute('position', '1.0 1.22 0.06');
+        label3dEq.setAttribute('value', 'E1(Q=10, P=10)');
+      }
+
+      // Update Grafik 2D (Chart.js)
+      equilibriumChart.data.datasets[2].data = hasSubsidy 
+        ? [{x: 4, y: 0}, {x: 24, y: 20}] 
+        : [{x: 0, y: 0}, {x: 20, y: 20}];
+      equilibriumChart.data.datasets[2].label = hasSubsidy ? "Penawaran Subsidi (Qs')" : "Penawaran Aktif (Qs)";
+      equilibriumChart.data.datasets[3].data = [{x: Qd, y: P}];
+      equilibriumChart.data.datasets[4].data = [{x: Qs, y: P}];
+      equilibriumChart.data.datasets[5].data = [{x: 0, y: P}, {x: 24, y: P}];
+      equilibriumChart.update();
+
+      // Update Panel Angka Matematika Bisnis
+      document.getElementById('val-qd').innerText = `${Qd} unit`;
+      document.getElementById('val-qs').innerText = `${Qs} unit`;
+      document.getElementById('val-q-actual').innerText = `${actualTransactionQ} unit`;
+      document.getElementById('val-revenue').innerText = `Rp ${(P * actualTransactionQ).toLocaleString('id-ID')}.000`;
+
+      const totalSubsidyCost = hasSubsidy ? (subsidyAmount * actualTransactionQ) : 0;
+      document.getElementById('val-subsidy-cost').innerText = hasSubsidy 
+        ? `Rp ${totalSubsidyCost.toLocaleString('id-ID')}.000 (s=${subsidyAmount} × Q=${actualTransactionQ})`
+        : `Rp 0 (Subsidi Nonaktif)`;
+
+      document.getElementById('formula-display').innerHTML = hasSubsidy
+        ? `• Permintaan: <strong>Qd = 20 - P</strong><br>• Penawaran : <strong>Qs' = P + 4</strong> (Subsidi s=4)<br>• Ekuilibrium Baru: <strong>Pe' = 8 | Qe' = 12</strong>`
+        : `• Permintaan: <strong>Qd = 20 - P</strong><br>• Penawaran : <strong>Qs = P</strong><br>• Ekuilibrium Awal: <strong>Pe = 10 | Qe = 10</strong>`;
+
+      // Update Visualisasi Lapak 3D
+      updateMarket3DObjects(Qd, Qs);
+
+      // Update Status Badge & Dialog Sokratik AI "Mbak Siti"
+      if (P === eqPrice) {
+        statusBadge.innerText = `Ekuilibrium Pasar (Pe = ${eqPrice}, Qe = ${eqQty})`;
+        statusBadge.style.background = "#006e59";
+        aiText.innerText = hasSubsidy
+          ? `Subsidi berhasil menurunkan harga keseimbangan ke P = ${P} dan meningkatkan transaksi menjadi Q = ${Qd} unit! Perhatikan kurva biru yang bergeser ke kanan.`
+          : `Titik Ekuilibrium tercapai pada P = ${P}. Jumlah beras yang diminta pembeli (${Qd}) tepat sama dengan persediaan di lapak (${Qs}).`;
+      } else if (P > eqPrice) {
+        const surplus = Qs - Qd;
+        statusBadge.innerText = `Surplus Penawaran (+${surplus} unit)`;
+        statusBadge.style.background = "#d97706";
+        aiText.innerText = `Harga P = ${P} di atas keseimbangan! Stok karung beras menumpuk (${Qs} unit), sementara pembeli hanya sanggup membeli ${Qd} unit. Apa dampaknya jika pedagang tetap menahan harga tinggi?`;
+      } else {
+        const shortage = Qd - Qs;
+        statusBadge.innerText = `Kelangkaan / Shortage (-${shortage} unit)`;
+        statusBadge.style.background = "#dc2626";
+        aiText.innerText = `Harga P = ${P} terlalu murah! Pembeli membludak (${Qd} orang), tetapi stok beras hanya ${Qs} karung. Mengapa kondisi excess demand ini mendorong harga naik kembali?`;
+      }
+    }
+
+    // Toggle Subsidi
+    function toggleSubsidy() {
+      hasSubsidy = !hasSubsidy;
+      if (hasSubsidy) {
+        btnSubsidy.innerText = "✓ Subsidi Aktif (s = 4)";
+        btnSubsidy.classList.add('active-subsidy');
+      } else {
+        btnSubsidy.innerText = "+ Subsidi (s = 4)";
+        btnSubsidy.classList.remove('active-subsidy');
+      }
+      updateSimulation();
+    }
+
+    // Reset Simulasi
+    function resetSimulation() {
+      hasSubsidy = false;
+      btnSubsidy.innerText = "+ Subsidi (s = 4)";
+      btnSubsidy.classList.remove('active-subsidy');
+      priceSlider.value = 10;
+      setCameraView('overview');
+      updateSimulation();
+    }
+
+    // Preset Kamera 3D
+    function setCameraView(view) {
+      const rig = document.getElementById('camera-rig');
+      if (view === 'overview') {
+        rig.setAttribute('position', '0 1.6 0.8');
+      } else if (view === 'market') {
+        rig.setAttribute('position', '-2.5 1.5 -0.8');
+      } else if (view === 'graph') {
+        rig.setAttribute('position', '2.1 1.8 -1.2');
+      }
+    }
+
+    // Event Listener & Inisialisasi
+    priceSlider.addEventListener('input', updateSimulation);
+    build3DGrid();
+    updateSimulation();
+  </script>
+</body>
+</html>
